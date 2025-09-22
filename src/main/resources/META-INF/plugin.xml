@@ -1,0 +1,40 @@
+<idea-plugin>
+    <id>org.zenith.GraphNet</id>
+    <name>GraphNet</name>
+    <vendor email="support@teamzenithwgs.com" url="https://www.zenithwgs.com">Zenith</vendor>
+
+    <description><![CDATA[
+    GraphNet dependency analysis plugin for IntelliJ IDEA.<br>
+    <em>Analyze project dependencies and impact</em>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.lang</depends>
+    <depends>com.intellij.modules.vcs</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Project startup activity -->
+        <postStartupActivity implementation="org.zenith.graphnet.ProjectStartupActivity"/>
+
+        <!-- Tool window for dependency analysis -->
+        <toolWindow id="GraphNetAnalysis"
+                    factoryClass="org.zenith.graphnet.gui.DependencyToolWindowFactory"
+                    anchor="right"
+                    secondary="false"/>
+
+        <!-- Application service for global settings (if needed later) -->
+        <applicationService serviceImplementation="org.zenith.graphnet.service.GraphNetSettingsService"/>
+
+        <!-- File type factory for custom file support (if needed) -->
+        <!-- <fileTypeFactory implementation="org.zenith.graphnet.file.GraphNetFileTypeFactory"/> -->
+
+<!--        &lt;!&ndash; Project component for lifecycle management &ndash;&gt;-->
+        <projectConfigurable parentId="tools"
+                             id="GraphNet.Settings"
+                             displayName="GraphNet Settings"
+                             implementation="org.zenith.graphnet.settings.GraphNetConfigurable"/>
+
+    </extensions>
+
+
+</idea-plugin>
