@@ -5,17 +5,17 @@ import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.*;
 import com.intellij.psi.search.FileTypeIndex;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.fileTypes.FileTypeManager;
 import okhttp3.*;
-import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.NotNull;
+import org.zenith.graphnet.model.ChangedFile;
 import org.zenith.graphnet.model.DependencyGraph;
 import org.zenith.graphnet.model.FileNode;
 import org.zenith.graphnet.model.GitDiffData;
+import org.zenith.graphnet.util.GitDiffParser;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -37,8 +37,8 @@ public final class DependencyAnalysisService {
     private boolean initialized = false;
 
     // Microservice configuration
-    private static final String MICROSERVICE_URL = "http://localhost:8080/api/dependency-analysis";
-    private static final String GIT_DIFF_ENDPOINT = "/git-diff";
+    private static final String MICROSERVICE_URL = "http://localhost:8000";
+    private static final String GIT_DIFF_ENDPOINT = "/repository/perform-mr-metrics";
     private static final String ANALYZE_ENDPOINT = "/analyze";
 
     // Regex patterns for dependency detection
@@ -237,13 +237,17 @@ public final class DependencyAnalysisService {
                 System.out.println("No git changes found");
                 return;
             }
-
+            System.out.println("Git diff: " + gitDiff);
+            // parse git diff
+            List<ChangedFile> changedFilesList = GitDiffParser.parseGitDiff(gitDiff);
             // Create git diff data
             GitDiffData diffData = new GitDiffData();
-            diffData.setProjectName(project.getName());
-            diffData.setDiff(gitDiff);
-            diffData.setTimestamp(System.currentTimeMillis());
-            diffData.setDependencyGraph(getCurrentDependencyGraph());
+            diffData.setRepository(project.getName());
+            diffData.setAuthor("Afzal");
+            diffData.setMrId("MR-123");
+            diffData.setSourceBranch("feature-branch");
+            diffData.setTargetBranch("main");
+            diffData.setChangedFiles(changedFilesList);
 
             // Send to microservice
             sendDiffToMicroservice(diffData);
@@ -256,7 +260,7 @@ public final class DependencyAnalysisService {
 
     private String getGitDiff() {
         try {
-            Process process = new ProcessBuilder("git", "diff", "--name-only")
+            Process process = new ProcessBuilder("git", "diff")
                     .directory(project.getBaseDir().toNioPath().toFile())
                     .start();
 
@@ -289,6 +293,7 @@ public final class DependencyAnalysisService {
     private void sendDiffToMicroservice(GitDiffData diffData) {
         try {
             String json = objectMapper.writeValueAsString(diffData);
+            System.out.println(json);
 
             RequestBody body = RequestBody.create(
                     json,
@@ -301,16 +306,26 @@ public final class DependencyAnalysisService {
                     .addHeader("Content-Type", "application/json")
                     .build();
 
-            Response response = httpClient.newCall(request).execute();
+            // Try-with-resources automatically closes the response
+            try (Response response = httpClient.newCall(request).execute()) {
 
-            if (response.isSuccessful()) {
-                System.out.println("Git diff sent successfully to microservice");
-                System.out.println("Response: " + response.body().string());
-            } else {
-                System.err.println("Failed to send git diff. Status: " + response.code());
-                System.err.println("Response: " + response.body().string());
+                String responseBody = "";
+                if (response.body() != null) {
+                    responseBody = response.body().string();
+                }
+
+                if (response.isSuccessful()) {
+                    System.out.println("Git diff sent successfully to microservice");
+                    System.out.println("Response: " + responseBody);
+                } else {
+                    System.err.println("Failed to send git diff. Status: " + response.code());
+                    System.err.println("Response: " + responseBody);
+                }
             }
 
+        } catch (IOException e) {
+            System.err.println("Network error sending data to microservice: " + e.getMessage());
+            e.printStackTrace();
         } catch (Exception e) {
             System.err.println("Error sending data to microservice: " + e.getMessage());
             e.printStackTrace();

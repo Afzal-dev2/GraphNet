@@ -16,7 +16,7 @@ public interface MicroserviceCommunicator {
     /**
      * Send dependency graph to microservice
      */
-    void sendDependencyGraph(DependencyGraph graph) throws Exception;
+    void sendDependencyGraph() throws Exception;
 
     /**
      * Send git diff data to microservice

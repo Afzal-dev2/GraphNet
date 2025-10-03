@@ -355,20 +355,20 @@ public class DependencyToolWindowContent {
 
     private void showDiagramForHardcodedPath() {
 
-//        String path = "C:/Users/w191728/WGSGoogleHckathon/TestingImpactAnalysis/DemoCode/angular-springboot-ecommerce/backend/src/main";
+        String mainDirPath = "C:/Users/w191728/WGSGoogleHckathon/TestingImpactAnalysis/DemoCode/angular-springboot-ecommerce/backend/src/main";
 
-        Path currentWorkingDir = Paths.get("").toAbsolutePath();
-        System.out.println("Current Working Directory: " + currentWorkingDir);
-
-        // 2. Resolve the path to the desired subdirectory.
-        // The resolve() method safely joins path components.
-        Path mainDirPath = currentWorkingDir.resolve("src").resolve("main");
-
-        System.out.println("Constructed path to 'main' folder: " + mainDirPath);
+//        Path currentWorkingDir = Paths.get("").toAbsolutePath();
+//        System.out.println("Current Working Directory: " + currentWorkingDir);
+//
+//        // 2. Resolve the path to the desired subdirectory.
+//        // The resolve() method safely joins path components.
+//        Path mainDirPath = currentWorkingDir.resolve("src").resolve("main");
+//
+//        System.out.println("Constructed path to 'main' folder: " + mainDirPath);
 
         // 3. IMPORTANT: Always validate that the path actually exists before using it.
-        if (Files.exists(mainDirPath) && Files.isDirectory(mainDirPath)) {
-            System.out.println("\nSUCCESS: The directory 'src/main' was found.");
+//        if (Files.exists(mainDirPath) && Files.isDirectory(mainDirPath)) {
+//            System.out.println("\nSUCCESS: The directory 'src/main' was found.");
 
 //        DiagramAutomationUtil.showDiagramWithDependencies(project, path);
             DiagramAutomationWithExportUtil.AutomationConfig config = new DiagramAutomationWithExportUtil.AutomationConfig(true, true, new File("C:/Users/w191728/WGSGoogleHckathon/TestingImpactAnalysis/DemoCode/angular-springboot-ecommerce/backend/dependency.md"),  // Output file (null for file chooser)
@@ -382,11 +382,11 @@ public class DependencyToolWindowContent {
                     }
             );
             DiagramAutomationWithExportUtil.automatedDiagramWorkflow(project, mainDirPath.toString(), config);
-        }
-        else {
-            System.out.println("\nERROR: The directory 'src/main' does not exist.");
-            Messages.showErrorDialog(project, "The directory 'src/main' does not exist in the current working directory:\n" + currentWorkingDir, "Directory Not Found");
-        }
+//        }
+//        else {
+//            System.out.println("\nERROR: The directory 'src/main' does not exist.");
+//            Messages.showErrorDialog(project, "The directory 'src/main' does not exist in the current working directory:\n" + currentWorkingDir, "Directory Not Found");
+//        }
     }
     public void showDiagramForFolderPath(Project project, String folderPath) {
         // All UI and action-related operations must happen on the Event Dispatch Thread (EDT).

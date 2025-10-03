@@ -20,6 +20,7 @@ import com.intellij.util.messages.MessageBusConnection;
 import com.intellij.util.ui.UIUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.zenith.graphnet.impl.HttpMicroserviceCommunicator;
 
 import javax.swing.*;
 import java.awt.*;
@@ -40,7 +41,9 @@ public final class DiagramAutomationWithExportUtil {
     private static final int CHECK_INTERVAL_MS = 100;
     private static final int RENDER_STABILIZATION_DELAY_MS = 1000; // Wait for rendering to stabilize
 
-    private DiagramAutomationWithExportUtil() {}
+    private DiagramAutomationWithExportUtil() {
+
+    }
 
     /**
      * Configuration for the automation workflow
@@ -104,10 +107,11 @@ public final class DiagramAutomationWithExportUtil {
         private final AtomicBoolean workflowCompleted = new AtomicBoolean(false);
         private final AtomicReference<FileEditor> diagramEditor = new AtomicReference<>();
         private MessageBusConnection connection;
-
+        private HttpMicroserviceCommunicator communicator;
         DiagramWorkflowListener(Project project, AutomationConfig config) {
             this.project = project;
             this.config = config;
+            this.communicator = new HttpMicroserviceCommunicator();
         }
         private static  boolean isDependenciesButton(String accessibleName, String text, Icon icon) {
             // Check tooltip
@@ -267,7 +271,11 @@ public final class DiagramAutomationWithExportUtil {
                         // Wait for the diagram to re-render after toggling
                         System.out.println("Waiting for diagram to re-render after dependency toggle");
                         waitForReRender(() -> {
-                            proceedToExport(editor);
+                            try {
+                                proceedToExport(editor);
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
                         });
                         return;
                     } else {
@@ -278,12 +286,14 @@ public final class DiagramAutomationWithExportUtil {
                 // If no toggle needed or toggle failed, proceed directly to export
                 proceedToExport(editor);
 
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             } finally {
                 cleanup();
             }
         }
 
-        private void proceedToExport(FileEditor editor) {
+        private void proceedToExport(FileEditor editor) throws Exception {
             // Step 2: Export to Mermaid if requested
             if (config.exportToMermaid) {
                 System.out.println("Exporting diagram to Mermaid");
@@ -309,7 +319,7 @@ public final class DiagramAutomationWithExportUtil {
             });
         }
 
-        private void exportDiagramToMermaid(FileEditor editor) {
+        private void exportDiagramToMermaid(FileEditor editor) throws Exception {
             DataContext dataContext = createDiagramExportContext(project, editor, config.mermaidOutputFile);
 
             ActionManager actionManager = ActionManager.getInstance();
@@ -349,6 +359,10 @@ public final class DiagramAutomationWithExportUtil {
             if (event.getPresentation().isEnabledAndVisible()) {
                 System.out.println("Executing Mermaid export");
                 exportAction.actionPerformed(event);
+                System.out.println("Executed Mermaid export");
+                // read the generated file and send its content
+                communicator.sendDependencyGraph(); // Placeholder for actual graph
+
             } else {
                 LOG.error("Mermaid export action is not enabled");
             }
